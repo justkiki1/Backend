@@ -89,6 +89,18 @@ jobs:
       - name: Enforce and publish coverage thresholds
         run: npm run test:coverage -- --runInBand --coverageReporters=text-summary --coverageReporters=lcov
 
+      # fork-only: short, readable report of which suites fail, plus the
+      # suites the #768 / #769 changes touch, with every test name.
+      - name: Failing suites summary (fork-only)
+        if: always()
+        run: |
+          npx jest --runInBand --silent --json --outputFile=jest-results.json > /dev/null 2>&1 || true
+          node -e "const r=require('./jest-results.json');const f=r.testResults.filter(t=>t.status==='failed').map(t=>t.name.replace(process.cwd()+'/',''));console.log('FAILED SUITES '+f.length+' | failed tests '+r.numFailedTests+' | passed tests '+r.numPassedTests);f.sort().forEach(n=>console.log('  FAILED '+n))"
+
+      - name: Changed-area suites (fork-only)
+        if: always()
+        run: npx jest tests/unit/nlp tests/integration/agent --runInBand --verbose
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
